@@ -47,10 +47,8 @@ logger.setLevel(logging.INFO)
 logger.propagate = False
 
 if not logger.handlers:
-    file_handler = logging.StreamHandler(
-        LOG_FILE,
-        encoding="utf-8"
-    )
+    file_handler = logging.StreamHandler()
+     
 
     file_handler.setFormatter(
         logging.Formatter(
