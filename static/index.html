@@ -1,0 +1,2749 @@
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice AI Assistant</title>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #10172a, #202b4b, #312e81);
+            color: #f8fafc;
+            padding: 30px 16px;
+        }
+
+        .container { width: 100%; max-width: 850px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 28px; }
+        .logo { font-size: 42px; margin-bottom: 8px; }
+        h1 { margin: 0 0 10px; font-size: clamp(28px, 5vw, 42px); }
+        .subtitle { color: #cbd5e1; line-height: 1.6; }
+
+        .panel {
+            background: rgba(255,255,255,.08);
+            border: 1px solid rgba(255,255,255,.15);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 12px 35px rgba(0,0,0,.15);
+        }
+
+        .status {
+            padding: 13px 15px;
+            border-radius: 12px;
+            background: rgba(15,23,42,.65);
+            color: #c4b5fd;
+            line-height: 1.5;
+            margin-bottom: 20px;
+            overflow-wrap: anywhere;
+        }
+
+        .buttons { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
+
+        button {
+            border: none;
+            border-radius: 11px;
+            padding: 13px 18px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform .15s, opacity .15s;
+        }
+
+        button:not(:disabled):hover { transform: translateY(-2px); }
+        button:disabled { opacity: .45; cursor: not-allowed; }
+        #recordBtn { background: #8b5cf6; color: white; }
+        #stopBtn { background: #f87171; color: #1f2937; }
+        #replayBtn { background: #34d399; color: #052e25; }
+
+        .hint { color: #cbd5e1; font-size: 13px; line-height: 1.6; }
+        h2 { font-size: 19px; margin: 0 0 13px; }
+
+        .content {
+            min-height: 95px;
+            padding: 16px;
+            border-radius: 12px;
+            background: rgba(15,23,42,.65);
+            border: 1px solid rgba(255,255,255,.1);
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            line-height: 1.7;
+            color: #f1f5f9;
+        }
+
+        .footer { text-align: center; font-size: 12px; color: #cbd5e1; margin-top: 24px; }
+
+        .booking-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .field { display: flex; flex-direction: column; gap: 7px; }
+        .field label { font-size: 13px; color: #cbd5e1; }
+
+        .field input, .field select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #64748b;
+            border-radius: 9px;
+            color: #f8fafc;
+            background: #172036;
+            font-size: 15px;
+        }
+
+        .field option { color: #f8fafc; background: #172036; }
+        #checkAvailabilityBtn { background: #a78bfa; color: #1e1b4b; }
+
+        .slot-card {
+            border: 1px solid rgba(255,255,255,.2);
+            border-radius: 12px;
+            padding: 14px;
+            margin-top: 10px;
+            background: rgba(15,23,42,.65);
+        }
+
+        .slot-card.selected { border: 2px solid #34d399; }
+        .slot-card button { margin-top: 10px; background: #c4b5fd; color: #1e1b4b; }
+        #bookingStatus { margin-top: 14px; }
+
+        @media (max-width: 520px) {
+            body { padding: 22px 12px; }
+            .panel { padding: 17px; }
+            .buttons { flex-direction: column; }
+            button { width: 100%; }
+            .booking-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+
+<body>
+<main class="container">
+    <header class="header">
+        <div class="logo">🎙️</div>
+        <h1>Voice AI Assistant</h1>
+        <p class="subtitle">
+            Speak naturally, get AI answers and check demo booking availability.
+        </p>
+    </header>
+
+    <section class="panel">
+        <h2>🎧 Voice Controls</h2>
+
+        <div id="statusText" class="status" role="status" aria-live="polite">
+            Ready. Click Start Conversation.
+        </div>
+
+        <div class="buttons">
+            <button id="recordBtn" type="button">🎙️ Start Conversation</button>
+            <button id="stopBtn" type="button" disabled>⏹ Stop Conversation</button>
+            <button id="replayBtn" type="button" disabled>🔊 Replay Answer</button>
+        </div>
+
+        <p class="hint">
+            Speak naturally. Jab tum bolna band karogi, assistant automatically
+            jawab dega. Har turn ke baad microphone restart hoga. Chat end karne
+            ke liye Stop Conversation dabao.
+        </p>
+    </section>
+
+    <section class="panel">
+        <h2>📝 Your Transcript</h2>
+        <div id="transcriptBox" class="content">Your speech will appear here.</div>
+    </section>
+
+    <section class="panel">
+        <h2>🤖 AI Answer</h2>
+        <div id="answerBox" class="content">Your AI answer will appear here.</div>
+    </section>
+
+    <section class="panel">
+        <h2>📅 Demo Booking Availability</h2>
+
+        <p class="hint">
+            Slots check karne ke liye voice use karo ya neeche details select karo.
+            Ye demo sirf availability check karta hai; booking create nahi karta.
+        </p>
+
+        <div class="booking-grid">
+            <div class="field">
+                <label for="businessType">Business type</label>
+                <select id="businessType">
+                    <option value="cafe" selected>Cafe</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label for="bookingDate">Date</label>
+                <input id="bookingDate" type="date">
+            </div>
+
+            <div class="field">
+                <label for="bookingTime">Preferred time</label>
+                <input id="bookingTime" type="time" value="19:00">
+            </div>
+
+            <div class="field">
+                <label for="bookingGuests">People / guests</label>
+                <input id="bookingGuests" type="number" min="1" max="20" value="2">
+            </div>
+
+            <div class="field">
+                <label for="customerName">Your name (optional)</label>
+                <input id="customerName" type="text" placeholder="Enter your name">
+            </div>
+
+            <div class="field">
+                <label for="customerPhone">Phone (optional)</label>
+                <input id="customerPhone" type="tel" placeholder="Enter phone number">
+            </div>
+        </div>
+
+        <div class="buttons" style="margin-top:16px;">
+            <button id="checkAvailabilityBtn" type="button">🔎 Check Availability</button>
+        </div>
+
+        <div id="bookingStatus" class="status" role="status" aria-live="polite">
+            Select booking details or make a voice request.
+        </div>
+
+        <div id="slotResults" aria-live="polite"></div>
+    </section>
+
+    <footer class="footer">
+        Voice AI Assistant · FastAPI · ElevenLabs · Groq · MySQL
+    </footer>
+</main>
+
+<script type="module">
+import {
+    Scribe,
+    RealtimeEvents,
+    CommitStrategy
+} from "https://esm.sh/@elevenlabs/client";
+
+function initializeVoiceAssistant() {
+    const $ = id => document.getElementById(id);
+
+    const recordBtn = $("recordBtn");
+    const stopBtn = $("stopBtn");
+    const replayBtn = $("replayBtn");
+    const statusText = $("statusText");
+    const transcriptBox = $("transcriptBox");
+    const answerBox = $("answerBox");
+
+    const businessTypeInput = $("businessType");
+    const bookingDateInput = $("bookingDate");
+    const bookingTimeInput = $("bookingTime");
+    const bookingGuestsInput = $("bookingGuests");
+
+    const checkAvailabilityBtn = $("checkAvailabilityBtn");
+    const bookingStatus = $("bookingStatus");
+    const slotResults = $("slotResults");
+
+    let connection = null;
+    let microphonePermissionStream = null;
+    let autoMode = false;
+    let processingTurn = false;
+    let isStopping = false;
+
+    let committedTranscript = "";
+    let partialTranscript = "";
+    let lastTranscript = "";
+    let lastAnswer = "";
+
+    let requestStartTime = 0;
+    let recordingStartTime = 0;
+    let firstPartialTime = null;
+    let sttFirstPartialLatencyMs = null;
+    let sttFinalLatencyMs = null;
+
+    let prefetchedToken = null;
+    let prefetchedTokenAt = 0;
+    let tokenPrefetchPromise = null;
+
+    let bookingConversationActive = false;
+
+    const TOKEN_CACHE_MAX_AGE_MS = 30000;
+
+    function localDateString(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+    }
+
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    bookingDateInput.min = localDateString(new Date());
+    bookingDateInput.value = localDateString(tomorrow);
+
+    async function fetchScribeToken() {
+        const response = await fetch("/api/scribe-token");
+        const data = await response.json();
+
+        if (!response.ok || !data.token) {
+            throw new Error(data.detail || "Realtime token unavailable.");
+        }
+
+        return data.token;
+    }
+
+    function prefetchScribeToken() {
+        if (prefetchedToken || tokenPrefetchPromise) return;
+
+        tokenPrefetchPromise = fetchScribeToken()
+            .then(token => {
+                prefetchedToken = token;
+                prefetchedTokenAt = performance.now();
+            })
+            .catch(error => console.warn("Token prefetch failed:", error))
+            .finally(() => {
+                tokenPrefetchPromise = null;
+            });
+    }
+
+    async function getReadyScribeToken() {
+        if (
+            prefetchedToken &&
+            performance.now() - prefetchedTokenAt < TOKEN_CACHE_MAX_AGE_MS
+        ) {
+            const token = prefetchedToken;
+            prefetchedToken = null;
+            return token;
+        }
+
+        if (tokenPrefetchPromise) {
+            await tokenPrefetchPromise;
+
+            if (
+                prefetchedToken &&
+                performance.now() - prefetchedTokenAt < TOKEN_CACHE_MAX_AGE_MS
+            ) {
+                const token = prefetchedToken;
+                prefetchedToken = null;
+                return token;
+            }
+        }
+
+        prefetchedToken = null;
+        return await fetchScribeToken();
+    }
+
+    prefetchScribeToken();
+
+    recordBtn.addEventListener("click", async () => {
+        if (autoMode || connection) return;
+
+        autoMode = true;
+        recordBtn.disabled = true;
+        stopBtn.disabled = false;
+
+        statusText.textContent = "Starting conversation...";
+        await startRecording();
+    });
+
+    stopBtn.addEventListener("click", endConversation);
+
+    replayBtn.addEventListener("click", () => {
+        if (lastAnswer) speakAnswer(lastAnswer, lastTranscript, false, false);
+    });
+
+    checkAvailabilityBtn.addEventListener("click", async () => {
+        await checkAvailability({
+            business_type: businessTypeInput.value,
+            slot_date: bookingDateInput.value,
+            preferred_time: bookingTimeInput.value,
+            guests: Number(bookingGuestsInput.value || 1)
+        }, false);
+    });
+
+    function endConversation() {
+        autoMode = false;
+        isStopping = true;
+        processingTurn = false;
+
+        if (connection) {
+            try {
+                connection.close();
+            } catch (error) {
+                console.warn(error);
+            }
+            connection = null;
+        }
+
+        if ("speechSynthesis" in window) {
+            window.speechSynthesis.cancel();
+        }
+
+        recordBtn.disabled = false;
+        stopBtn.disabled = true;
+        statusText.textContent = "Conversation ended. Click Start Conversation to restart.";
+
+        isStopping = false;
+    }
+
+    async function startRecording() {
+        if (!autoMode || connection || processingTurn) return;
+
+        recordingStartTime = performance.now();
+        firstPartialTime = null;
+        sttFirstPartialLatencyMs = null;
+        sttFinalLatencyMs = null;
+        committedTranscript = "";
+        partialTranscript = "";
+        isStopping = false;
+
+        recordBtn.disabled = true;
+        stopBtn.disabled = false;
+
+        transcriptBox.textContent = "Connecting to ElevenLabs...";
+        statusText.textContent = "Preparing microphone...";
+
+        try {
+            if (!navigator.mediaDevices?.getUserMedia || !window.isSecureContext) {
+                throw new Error("Microphone access unavailable. Open localhost or HTTPS.");
+            }
+
+            // Cancel any remaining assistant speech before opening the mic.
+            window.speechSynthesis?.cancel();
+
+            const token = await getReadyScribeToken();
+
+            if (!autoMode) return;
+
+            const newConnection = await Scribe.connect({
+                token,
+                modelId: "scribe_v2_realtime",
+                commitStrategy: CommitStrategy.VAD,
+                microphone: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                }
+            });
+
+            if (!autoMode) {
+                newConnection.close();
+                return;
+            }
+
+            connection = newConnection;
+            transcriptBox.textContent = "Listening...";
+            statusText.textContent = "Listening... Speak now.";
+
+            newConnection.on(RealtimeEvents.SESSION_STARTED, () => {
+                if (!autoMode || connection !== newConnection) return;
+
+                statusText.textContent = "Listening... Speak now.";
+                transcriptBox.textContent = "Listening...";
+                recordBtn.disabled = true;
+                stopBtn.disabled = false;
+            });
+
+            newConnection.on(RealtimeEvents.PARTIAL_TRANSCRIPT, data => {
+                if (isStopping || connection !== newConnection || !data.text) return;
+
+                if (firstPartialTime === null) {
+                    firstPartialTime = performance.now();
+                    sttFirstPartialLatencyMs = Math.round(
+                        firstPartialTime - recordingStartTime
+                    );
+                }
+
+                partialTranscript = data.text;
+                transcriptBox.textContent = [
+                    committedTranscript,
+                    partialTranscript
+                ].filter(Boolean).join(" ");
+
+                statusText.textContent = "Listening... Finish speaking when ready.";
+            });
+
+            newConnection.on(RealtimeEvents.COMMITTED_TRANSCRIPT, data => {
+                if (isStopping || connection !== newConnection || !data.text) return;
+
+                committedTranscript = [
+                    committedTranscript,
+                    data.text
+                ].filter(Boolean).join(" ");
+
+                partialTranscript = "";
+                transcriptBox.textContent = committedTranscript;
+
+                // VAD automatically finalizes the spoken turn.
+                if (autoMode && !processingTurn) {
+                    processingTurn = true;
+                    void processTranscript(committedTranscript.trim());
+                }
+            });
+
+            newConnection.on(RealtimeEvents.ERROR, error => {
+                console.error("ElevenLabs error:", error);
+                statusText.textContent = bookingLanguage === "hi"
+                    ? "आवाज़ साफ़ नहीं सुनाई दी। कृपया दोबारा बोलें।"
+                    : "I couldn't hear that clearly. Please say it again.";
+            });
+
+            prefetchScribeToken();
+
+        } catch (error) {
+            console.error("Start recording error:", error);
+
+            if (connection) {
+                try { connection.close(); } catch {}
+                connection = null;
+            }
+
+            if (autoMode) {
+                autoMode = false;
+                recordBtn.disabled = false;
+                stopBtn.disabled = true;
+                statusText.textContent = bookingLanguage === "hi"
+                    ? "माइक शुरू नहीं हो पाया। फिर से बातचीत शुरू करें।"
+                    : "The microphone couldn't start. Please restart the conversation.";
+            }
+
+            processingTurn = false;
+        }
+    }
+
+    async function logSTTLatency(question) {
+        const response = await fetch("/api/stt-latency", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                question,
+                stt_first_partial_latency_ms: sttFirstPartialLatencyMs,
+                stt_final_latency_ms: sttFinalLatencyMs
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error("STT latency logging failed: " + response.status);
+        }
+    }
+
+    async function processTranscript(transcript) {
+        if (!transcript || !autoMode) {
+            processingTurn = false;
+            return;
+        }
+
+        lastTranscript = transcript;
+        sttFinalLatencyMs = Math.round(performance.now() - recordingStartTime);
+
+        // Close this turn's microphone before the assistant speaks.
+        const oldConnection = connection;
+        connection = null;
+        isStopping = true;
+
+        if (oldConnection) {
+            try { oldConnection.close(); } catch (error) { console.warn(error); }
+        }
+
+        isStopping = false;
+        transcriptBox.textContent = transcript;
+        statusText.textContent = "Processing your message...";
+
+        try {
+            await logSTTLatency(transcript);
+        } catch (error) {
+            console.warn("STT latency log failed:", error);
+        }
+
+        try {
+            if (await tryHandleBookingRequest(transcript)) return;
+
+            statusText.textContent = "Generating AI answer...";
+
+            requestStartTime = performance.now();
+
+            const response = await fetch("/api/answer", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ transcript })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.detail || "Answer request failed.");
+            }
+
+            lastAnswer = data.answer || "";
+            answerBox.textContent = lastAnswer || "No answer was returned.";
+            replayBtn.disabled = !lastAnswer;
+
+            console.log("Saved to database:", data.saved_to_database);
+
+            if (lastAnswer) {
+                speakAnswer(lastAnswer, transcript, true, true);
+            } else {
+                finishTurnWithoutSpeech();
+            }
+
+        } catch (error) {
+            console.error("Voice API error:", error);
+
+            const message = responseLanguage(transcript) === "hi"
+                ? "मैं आपकी बात ठीक से समझ नहीं पाई। कृपया दोबारा बोलें।"
+                : "I couldn't get a clear answer. Could you please say it again?";
+            answerBox.textContent = message;
+            statusText.textContent = message;
+
+            speakAnswer(message, transcript, false, true);
+        }
+    }
+
+    function finishTurnWithoutSpeech() {
+        processingTurn = false;
+
+        if (autoMode) {
+            setTimeout(() => {
+                if (autoMode && !connection && !processingTurn) {
+                    startRecording();
+                }
+            }, 350);
+        }
+    }
+
+    async function tryHandleBookingRequest(transcript) {
+        const text = transcript.toLowerCase();
+
+        const bookingWords =
+            /\b(book|booking|reserve|reservation|slot|appointment|availability|available)\b|बुक|बुकिंग|करवा|चाहिए|बजे|जगह/i;
+        const looksLikeBooking = bookingWords.test(text);
+
+        const unsupportedBusiness =
+            /\b(hospital|clinic|doctor|gym|salon|hotel)\b|हॉस्पिटल|अस्पताल|डॉक्टर|जिम|पार्लर|सैलून|होटल/i;
+        const cafePattern = /\bcafe\b|\bcafé\b|coffee shop|कैफे/i;
+
+        if (unsupportedBusiness.test(text) && !cafePattern.test(text) &&
+            (looksLikeBooking || bookingConversationActive)) {
+            bookingConversationActive = false;
+            bookingStage = "idle";
+            const prompt = "Abhi sirf cafe booking available hai. Kya aap cafe ke liye slot book karna chahengi?";
+            bookingStatus.textContent = prompt;
+            answerBox.textContent = prompt;
+            await bookingPrompt(prompt);
+            return true;
+        }
+
+        const type = cafePattern.test(text) ? "cafe" : null;
+
+        const looksLikeBooking =
+            bookingWords.test(text) ||
+            /available slots|what times|which slots|slot available/i.test(text);
+
+        if (!looksLikeBooking && !bookingConversationActive) return false;
+
+        if (looksLikeBooking) bookingConversationActive = true;
+
+        if (type) businessTypeInput.value = type;
+
+        const currentType = businessTypeInput.value || "cafe";
+
+        const now = new Date();
+        let requestedDate = new Date(now);
+
+        if (/\btomorrow\b|\bkal\b|कल/i.test(text)) {
+            requestedDate.setDate(requestedDate.getDate() + 1);
+            bookingDateInput.value = localDateString(requestedDate);
+        } else if (/\btoday\b|\baaj\b|आज/i.test(text)) {
+            bookingDateInput.value = localDateString(requestedDate);
+        } else if (/\bday after tomorrow\b|परसों/i.test(text)) {
+            requestedDate.setDate(requestedDate.getDate() + 2);
+            bookingDateInput.value = localDateString(requestedDate);
+        }
+
+        let hour = null;
+        let minute = 0;
+
+        const twentyFourHourMatch =
+            text.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
+
+        const twelveHourMatch =
+            text.match(/\b(1[0-2]|0?[1-9])\s*(?::\s*([0-5]\d))?\s*(am|pm)\b/i);
+
+        const bajeMatch =
+            text.match(/\b(1[0-2]|0?[1-9])\s*(?::\s*([0-5]\d))?\s*(?:baje|बजे)\b/i);
+
+        const match = twentyFourHourMatch || twelveHourMatch || bajeMatch;
+
+        if (match) {
+            hour = Number(match[1]);
+            minute = Number(match[2] || 0);
+
+            if (twentyFourHourMatch) {
+                // Already 24-hour format.
+            } else if (twelveHourMatch) {
+                const suffix = twelveHourMatch[3].toLowerCase();
+
+                if (suffix === "pm" && hour < 12) hour += 12;
+                if (suffix === "am" && hour === 12) hour = 0;
+            } else if (
+                /\bshaam\b|\bevening\b|\bnight\b|शाम|रात/i.test(text) &&
+                hour < 12
+            ) {
+                hour += 12;
+            }
+        }
+
+        const guestMatch =
+            text.match(/\b(\d{1,2})\s*(people|persons|person|guests|guest|log|logo|members)\b/i);
+
+        const hindiGuestMatch = text.match(/(\d{1,2})\s*(?:लोग|लोगों)/);
+
+        if (guestMatch || hindiGuestMatch) {
+            const count = Number((guestMatch || hindiGuestMatch)[1]);
+            bookingGuestsInput.value = Math.max(1, Math.min(20, count));
+        }
+
+        if (hour === null) {
+            const businessName = currentType === "cafe"
+                ? "Demo Cafe"
+                : "Demo " + currentType[0].toUpperCase() + currentType.slice(1);
+
+            const prompt = `${businessName} ke liye kis date aur time par availability check karni hai?`;
+
+            bookingStatus.textContent = prompt;
+            answerBox.textContent = prompt;
+            speakAnswer(prompt, transcript, false, true);
+            return true;
+        }
+
+        const preferredTime =
+            String(hour).padStart(2, "0") + ":" +
+            String(minute).padStart(2, "0");
+
+        bookingTimeInput.value = preferredTime;
+
+        if (!bookingDateInput.value) {
+            bookingDateInput.value = localDateString(tomorrow);
+        }
+
+        bookingConversationActive = false;
+
+        await checkAvailability({
+            business_type: currentType,
+            slot_date: bookingDateInput.value,
+            preferred_time: preferredTime,
+            guests: Number(bookingGuestsInput.value || 1)
+        }, true);
+
+        return true;
+    }
+
+    async function checkAvailability(payload, voiceResponse = false) {
+        slotResults.replaceChildren();
+
+        if (!payload.slot_date || !payload.preferred_time) {
+            const message = "Please select a date and time first.";
+            bookingStatus.textContent = message;
+
+            if (voiceResponse) speakAnswer(message, "booking", false, true);
+            return;
+        }
+
+        if (!Number.isInteger(payload.guests) ||
+            payload.guests < 1 || payload.guests > 20) {
+            const message = "Guests must be between 1 and 20.";
+            bookingStatus.textContent = message;
+
+            if (voiceResponse) speakAnswer(message, "booking", false, true);
+            return;
+        }
+
+        checkAvailabilityBtn.disabled = true;
+        bookingStatus.textContent = "Checking available slots...";
+
+        try {
+            const response = await fetch("/api/booking/suggestions", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.detail || "Availability check failed.");
+            }
+
+            let spokenMessage = data.message || "Availability checked.";
+
+            if (data.selected_slot) {
+                renderSlot(data.selected_slot, true);
+            }
+
+            if (Array.isArray(data.suggestions) && data.suggestions.length) {
+                const heading = document.createElement("h3");
+                heading.textContent = "Alternative available slots";
+                slotResults.appendChild(heading);
+
+                data.suggestions.forEach(slot => renderSlot(slot, false));
+
+                const times = data.suggestions
+                    .map(slot => String(slot.start_time).slice(0, 5))
+                    .join(", ");
+
+                spokenMessage += ` Alternative available times are ${times}.`;
+            }
+
+            if (!data.selected_slot &&
+                (!data.suggestions || data.suggestions.length === 0)) {
+                spokenMessage += " No available slot was returned. Try another date or time.";
+            }
+
+            bookingStatus.textContent = data.message || spokenMessage;
+            answerBox.textContent = spokenMessage;
+
+            if (voiceResponse) {
+                speakAnswer(spokenMessage, lastTranscript || "booking", false, true);
+            } else {
+                statusText.textContent = "Availability check finished.";
+            }
+
+        } catch (error) {
+            console.error("Availability error:", error);
+
+            const message = "Availability error: " + error.message;
+            bookingStatus.textContent = message;
+            answerBox.textContent = message;
+
+            if (voiceResponse) {
+                speakAnswer(message, "booking", false, true);
+            }
+
+        } finally {
+            checkAvailabilityBtn.disabled = false;
+        }
+    }
+
+    function renderSlot(slot, isPreferred) {
+        const card = document.createElement("div");
+        card.className = "slot-card";
+
+        const heading = document.createElement("strong");
+        heading.textContent = slot.business_name || "Demo business";
+        card.appendChild(heading);
+
+        const details = document.createElement("p");
+        details.textContent =
+            `${slot.business_type || businessTypeInput.value} · ` +
+            `${slot.slot_date} · ${String(slot.start_time).slice(0, 5)} · ` +
+            `Available capacity: ${slot.available_capacity ?? "Not specified"}`;
+
+        card.appendChild(details);
+
+        const chooseButton = document.createElement("button");
+        chooseButton.type = "button";
+        chooseButton.textContent = isPreferred
+            ? "Select this slot"
+            : "Choose alternative";
+
+        chooseButton.addEventListener("click", () => {
+            document.querySelectorAll(".slot-card").forEach(item => {
+                item.classList.remove("selected");
+            });
+
+            card.classList.add("selected");
+
+            bookingStatus.textContent =
+                `You selected ${slot.business_name}, ${slot.slot_date}, ` +
+                `${String(slot.start_time).slice(0, 5)}. Availability only; no booking created.`;
+        });
+
+        card.appendChild(chooseButton);
+        slotResults.appendChild(card);
+    }
+
+    function speakAnswer(text, languageHint = "", logLatency = false, resumeListening = true) {
+        if (!text) {
+            if (resumeListening) finishTurnWithoutSpeech();
+            return;
+        }
+
+        if (!("speechSynthesis" in window)) {
+            statusText.textContent = "Answer is shown as text; speech playback is unsupported.";
+            if (resumeListening) finishTurnWithoutSpeech();
+            return;
+        }
+
+        window.speechSynthesis.cancel();
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        const hindiPattern = /[\u0900-\u097F]/;
+
+        utterance.lang =
+            hindiPattern.test(text) || /hindi|hinglish/i.test(languageHint)
+                ? "hi-IN"
+                : "en-US";
+
+        utterance.rate = 1;
+
+        utterance.onstart = async () => {
+            statusText.textContent = "Assistant is speaking...";
+
+            if (logLatency) {
+                const latency = Math.round(performance.now() - requestStartTime);
+                console.log("[LATENCY] API request to voice playback:", latency, "ms");
+
+                try {
+                    const response = await fetch("/api/latency", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            question: lastTranscript,
+                            time_to_voice_start_ms: latency
+                        })
+                    });
+
+                    if (!response.ok) {
+                        console.error("Latency logging failed:", response.status);
+                    }
+                } catch (error) {
+                    console.error("Latency logging failed:", error);
+                }
+            }
+        };
+
+        utterance.onend = () => {
+            if (!resumeListening) {
+                statusText.textContent = "Answer finished.";
+                return;
+            }
+
+            processingTurn = false;
+
+            if (autoMode) {
+                statusText.textContent = "Listening again... Speak when ready.";
+
+                setTimeout(() => {
+                    if (autoMode && !connection && !processingTurn) {
+                        startRecording();
+                    }
+                }, 350);
+            } else {
+                statusText.textContent = "Conversation ended.";
+            }
+        };
+
+        utterance.onerror = event => {
+            console.warn("Speech synthesis error:", event.error);
+
+            if (resumeListening) {
+                finishTurnWithoutSpeech();
+            }
+        };
+
+        window.speechSynthesis.speak(utterance);
+    }
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initializeVoiceAssistant, { once: true });
+} else {
+    initializeVoiceAssistant();
+}
+</script>
+</body>
+</html> -->
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice AI Assistant</title>
+
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #10172a, #202b4b, #312e81);
+            color: #f8fafc;
+            padding: 30px 16px;
+        }
+
+        .container { width: 100%; max-width: 850px; margin: auto; }
+        .header { text-align: center; margin-bottom: 28px; }
+        .logo { font-size: 42px; margin-bottom: 8px; }
+        h1 { margin: 0 0 10px; font-size: clamp(28px, 5vw, 42px); }
+        .subtitle, .hint { color: #cbd5e1; line-height: 1.6; }
+
+        .panel {
+            background: rgba(255,255,255,.08);
+            border: 1px solid rgba(255,255,255,.15);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 12px 35px rgba(0,0,0,.15);
+        }
+
+        .status {
+            padding: 13px 15px;
+            border-radius: 12px;
+            background: rgba(15,23,42,.65);
+            color: #c4b5fd;
+            line-height: 1.5;
+            margin-bottom: 20px;
+            overflow-wrap: anywhere;
+        }
+
+        .buttons { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 12px; }
+
+        button {
+            border: none;
+            border-radius: 11px;
+            padding: 13px 18px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:disabled { opacity: .45; cursor: not-allowed; }
+        #recordBtn { background: #8b5cf6; color: white; }
+        #stopBtn { background: #f87171; color: #1f2937; }
+        #replayBtn { background: #34d399; color: #052e25; }
+        #checkAvailabilityBtn { background: #a78bfa; color: #1e1b4b; }
+        #confirmBookingBtn { background: #34d399; color: #052e25; }
+
+        h2 { font-size: 19px; margin: 0 0 13px; }
+
+        .content {
+            min-height: 95px;
+            padding: 16px;
+            border-radius: 12px;
+            background: rgba(15,23,42,.65);
+            border: 1px solid rgba(255,255,255,.1);
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            line-height: 1.7;
+        }
+
+        .footer { text-align: center; font-size: 12px; color: #cbd5e1; margin-top: 24px; }
+
+        .booking-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
+        }
+
+        .field { display: flex; flex-direction: column; gap: 7px; }
+        .field label { font-size: 13px; color: #cbd5e1; }
+
+        .field input, .field select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #64748b;
+            border-radius: 9px;
+            color: #f8fafc;
+            background: #172036;
+            font-size: 15px;
+        }
+
+        .field option { color: #f8fafc; background: #172036; }
+
+        .slot-card {
+            border: 1px solid rgba(255,255,255,.2);
+            border-radius: 12px;
+            padding: 14px;
+            margin-top: 10px;
+            background: rgba(15,23,42,.65);
+        }
+
+        .slot-card.selected { border: 2px solid #34d399; }
+        .slot-card button { margin-top: 10px; background: #c4b5fd; color: #1e1b4b; }
+        #bookingStatus { margin-top: 14px; }
+
+        @media (max-width: 520px) {
+            body { padding: 22px 12px; }
+            .panel { padding: 17px; }
+            .buttons { flex-direction: column; }
+            button { width: 100%; }
+            .booking-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+
+<body>
+<main class="container">
+    <header class="header">
+        <div class="logo">🎙️</div>
+        <h1>Voice AI Assistant</h1>
+        <p class="subtitle">
+            Speak naturally, get AI answers and create bookings by voice.
+        </p>
+    </header>
+
+    <section class="panel">
+        <h2>🎧 Voice Controls</h2>
+
+        <div id="statusText" class="status" role="status" aria-live="polite">
+            Ready. Click Start Conversation.
+        </div>
+
+        <div class="buttons">
+            <button id="recordBtn" type="button">🎙️ Start Conversation</button>
+            <button id="stopBtn" type="button" disabled>⏹ Stop Conversation</button>
+            <button id="replayBtn" type="button" disabled>🔊 Replay Answer</button>
+        </div>
+
+        <p class="hint">
+            Bolo naturally. Assistant jawab dega aur phir microphone restart karega.
+            Booking ke liye naam, phone aur confirmation poochha jayega.
+            Conversation end karne ke liye Stop Conversation dabao.
+        </p>
+    </section>
+
+    <section class="panel">
+        <h2>📝 Your Transcript</h2>
+        <div id="transcriptBox" class="content">Your speech will appear here.</div>
+    </section>
+
+    <section class="panel">
+        <h2>🤖 AI Answer</h2>
+        <div id="answerBox" class="content">Your AI answer will appear here.</div>
+    </section>
+
+    <section class="panel">
+        <h2>📅 Booking</h2>
+
+        <p class="hint">
+            Slot check karne ke baad booking create kar sakte ho.
+            Booking sirf tumhari explicit confirmation ke baad create hogi.
+        </p>
+
+        <div class="booking-grid">
+            <div class="field">
+                <label for="businessType">Business type</label>
+                <select id="businessType">
+                    <option value="cafe" selected>Cafe</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label for="bookingDate">Date</label>
+                <input id="bookingDate" type="date">
+            </div>
+
+            <div class="field">
+                <label for="bookingTime">Preferred time</label>
+                <input id="bookingTime" type="time" value="19:00">
+            </div>
+
+            <div class="field">
+                <label for="bookingGuests">People / guests</label>
+                <input id="bookingGuests" type="number" min="1" max="20" value="2">
+            </div>
+
+            <div class="field">
+                <label for="customerName">Customer name</label>
+                <input id="customerName" type="text" placeholder="Enter your name" autocomplete="name">
+            </div>
+
+            <div class="field">
+                <label for="customerPhone">Phone number</label>
+                <input id="customerPhone" type="tel" placeholder="Enter phone number" autocomplete="tel">
+            </div>
+        </div>
+
+        <div class="buttons" style="margin-top:16px;">
+            <button id="checkAvailabilityBtn" type="button">🔎 Check Availability</button>
+            <button id="confirmBookingBtn" type="button" disabled>✅ Confirm Booking</button>
+        </div>
+
+        <div id="bookingStatus" class="status" role="status" aria-live="polite">
+            Select booking details or request a booking by voice.
+        </div>
+
+        <section id="receiptPanel" class="slot-card" hidden>
+            <h3>Booking receipt</h3>
+            <div id="receiptContent"></div>
+            <button id="downloadReceiptBtn" type="button">Download receipt</button>
+        </section>
+
+        <h3>Upcoming available slots</h3>
+        <div id="upcomingSchedule" aria-live="polite"></div>
+        <div id="slotResults" aria-live="polite"></div>
+    </section>
+
+    <footer class="footer">
+        Voice AI Assistant · FastAPI · ElevenLabs · Groq · MySQL
+    </footer>
+</main>
+
+<script type="module">
+import {
+    Scribe,
+    RealtimeEvents,
+    CommitStrategy
+} from "https://esm.sh/@elevenlabs/client";
+
+function initializeVoiceAssistant() {
+    const $ = id => document.getElementById(id);
+
+    const recordBtn = $("recordBtn");
+    const stopBtn = $("stopBtn");
+    const replayBtn = $("replayBtn");
+    const statusText = $("statusText");
+    const transcriptBox = $("transcriptBox");
+    const answerBox = $("answerBox");
+
+    const businessTypeInput = $("businessType");
+    const bookingDateInput = $("bookingDate");
+    const bookingTimeInput = $("bookingTime");
+    const bookingGuestsInput = $("bookingGuests");
+    const customerNameInput = $("customerName");
+    const customerPhoneInput = $("customerPhone");
+
+    const checkAvailabilityBtn = $("checkAvailabilityBtn");
+    const confirmBookingBtn = $("confirmBookingBtn");
+    const bookingStatus = $("bookingStatus");
+    const receiptPanel = $("receiptPanel");
+    const receiptContent = $("receiptContent");
+    const downloadReceiptBtn = $("downloadReceiptBtn");
+    const upcomingSchedule = $("upcomingSchedule");
+    const slotResults = $("slotResults");
+
+    let connection = null;
+    let microphonePermissionStream = null;
+    let autoMode = false;
+    let processingTurn = false;
+    let isStopping = false;
+
+    let lastTranscript = "";
+    let lastAnswer = "";
+    let committedTranscript = "";
+    let partialTranscript = "";
+
+    let recordingStartTime = 0;
+    let requestStartTime = 0;
+    let firstPartialTime = null;
+    let sttFirstPartialLatencyMs = null;
+    let sttFinalLatencyMs = null;
+
+    let prefetchedToken = null;
+    let prefetchedTokenAt = 0;
+    let tokenPrefetchPromise = null;
+
+    // Booking conversation state
+    let bookingConversationActive = false;
+    let bookingStage = "idle";
+    let pendingBooking = null;
+    let selectedSlot = null;
+    let lastAvailabilityPayload = null;
+    let pendingCustomerName = "";
+    let pendingCustomerPhone = "";
+    let pendingBookingConfirmed = false;
+    let latestReceipt = null;
+    let bookingLanguage = "en";
+    let bookingDateProvided = false;
+    let guestCountProvided = false;
+    let pendingSlotChoice = null;
+
+    const TOKEN_CACHE_MAX_AGE_MS = 30000;
+
+    function localDateString(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+    }
+
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    bookingDateInput.min = localDateString(new Date());
+    bookingDateInput.value = localDateString(tomorrow);
+
+    function isHindiInput(text) {
+        if (/[\u0900-\u097F]/.test(text)) return true;
+        const hindiMarkers = String(text).toLowerCase().match(
+            /\b(mai|main|mujhe|mujhko|mera|meri|mere|kya|hai|hain|chahiye|karna|karvao|karwa|batao|bataiye|kal|aaj|baje|shaam|subah|ka|ki|ke|mein|apna|krwa|krwani|chahiye)\b/g
+        ) || [];
+        return hindiMarkers.length >= 2 ||
+            /\b(mujhe|chahiye|batao|bataiye|baje|hai|hain|karna)\b/i.test(text);
+    }
+
+    function normalizeTranscript(text) {
+        return String(text).replace(/[०-९]/g, digit =>
+            String("०१२३४५६७८९".indexOf(digit))
+        );
+    }
+
+    function extractGuestCount(text, allowStandalone = false) {
+        const value = normalizeTranscript(text.toLowerCase());
+        const unit = value.match(/\b(?:people|persons?|guests?|members?|person|log|logo)\b|व्यक्ति|लोगों?/i);
+        let rawCount = null;
+
+        if (unit) {
+            const beforeUnit = value.slice(0, unit.index);
+            const numbers = beforeUnit.match(/\d{1,2}/g);
+            if (numbers?.length) rawCount = numbers[numbers.length - 1];
+
+            if (rawCount === null) {
+                const numberWords = {
+                    one: 1, two: 2, three: 3, four: 4, five: 5,
+                    six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
+                    ek: 1, do: 2, teen: 3, char: 4, chaar: 4, paanch: 5,
+                    cheh: 6, chhe: 6, saat: 7, aath: 8, nau: 9, das: 10,
+                    एक: 1, दो: 2, तीन: 3, चार: 4, पाँच: 5, पांच: 5,
+                    छह: 6, छः: 6, सात: 7, आठ: 8, नौ: 9, दस: 10
+                };
+                const words = beforeUnit.trim().split(/\s+/);
+                for (let index = words.length - 1; index >= 0; index--) {
+                    const token = words[index].replace(/[^\p{L}]/gu, "");
+                    if (numberWords[token] !== undefined) {
+                        rawCount = numberWords[token];
+                        break;
+                    }
+                }
+            }
+        } else {
+            const forMatch = value.match(/\b(?:for|party of|table for|there are|we are|hum)\s*(\d{1,2})\b/i);
+            if (forMatch) rawCount = forMatch[1];
+        }
+
+        if (rawCount === null && allowStandalone) {
+            const standalone = value.trim().match(/^(\d{1,2})$/);
+            if (standalone) rawCount = standalone[1];
+            else {
+                const numberWords = {
+                    one: 1, two: 2, three: 3, four: 4, five: 5,
+                    six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
+                    ek: 1, do: 2, teen: 3, char: 4, chaar: 4, paanch: 5,
+                    cheh: 6, chhe: 6, saat: 7, aath: 8, nau: 9, das: 10,
+                    एक: 1, दो: 2, तीन: 3, चार: 4, पाँच: 5, पांच: 5,
+                    छह: 6, छः: 6, सात: 7, आठ: 8, नौ: 9, दस: 10
+                };
+                const token = value.trim().replace(/[^\p{L}]/gu, "");
+                if (numberWords[token] !== undefined) rawCount = numberWords[token];
+            }
+        }
+
+        if (rawCount === null) return null;
+        const count = Number(rawCount);
+        return Number.isInteger(count) && count >= 1 && count <= 20 ? count : null;
+    }
+
+    function guestCountPrompt() {
+        return bookingLanguage === "hi"
+            ? "कितने लोगों के लिए बुकिंग चाहिए?"
+            : "How many people should I book for?";
+    }
+
+    function responseLanguage(text) {
+        return isHindiInput(text) ? "hi" : "en";
+    }
+
+    function formatTimeForDisplay(value) {
+        const match = String(value).match(/^(\d{1,2}):(\d{2})/);
+        if (!match) return String(value);
+        const hour = Number(match[1]);
+        const suffix = hour >= 12 ? "PM" : "AM";
+        return `${hour % 12 || 12}:${match[2]} ${suffix}`;
+    }
+
+    function formatTimeForSpeech(value) {
+        const match = String(value).match(/^(\d{1,2}):(\d{2})/);
+        if (!match) return String(value);
+        const hour = Number(match[1]);
+        return bookingLanguage === "hi"
+            ? `${hour % 12 || 12} बजे ${hour >= 12 ? "शाम" : "सुबह"}`
+            : formatTimeForDisplay(value);
+    }
+
+    function formatDateForSpeech(value) {
+        const parsed = new Date(`${value}T00:00:00`);
+        return parsed.toLocaleDateString(
+            bookingLanguage === "hi" ? "hi-IN" : "en-IN",
+            { day: "numeric", month: "long", year: "numeric" }
+        );
+    }
+
+    function asksForSchedule(text) {
+        return /\b(timing|timings|time table|timetable|schedule|available times?|what times?|which times?|what time is available)\b|कौन.{0,16}(समय|टाइम|टाइमिंग)|किस.{0,12}(समय|टाइम)|टाइमिंग|टाइम टेबल|समय बत|कौन सा समय/i.test(text);
+    }
+
+    function parseBookingDate(text) {
+        const value = text.toLowerCase();
+        const result = new Date();
+        if (/\bday after tomorrow\b|परसों/i.test(value)) {
+            result.setDate(result.getDate() + 2);
+            return localDateString(result);
+        }
+        if (/\btomorrow\b|\bkal\b|कल/i.test(value)) {
+            result.setDate(result.getDate() + 1);
+            return localDateString(result);
+        }
+        if (/\btoday\b|\baaj\b|आज/i.test(value)) return localDateString(result);
+
+        const iso = value.match(/\b(20\d{2})[-/](\d{1,2})[-/](\d{1,2})\b/);
+        if (iso) return `${iso[1]}-${String(iso[2]).padStart(2, "0")}-${String(iso[3]).padStart(2, "0")}`;
+
+        const months = {
+            jan: 0, january: 0, जनवरी: 0,
+            feb: 1, february: 1, फ़रवरी: 1, फरवरी: 1,
+            mar: 2, march: 2, मार्च: 2,
+            apr: 3, april: 3, अप्रैल: 3,
+            may: 4, मई: 4,
+            jun: 5, june: 5, जून: 5,
+            jul: 6, july: 6, जुलाई: 6,
+            aug: 7, august: 7, अगस्त: 7,
+            sep: 8, sept: 8, september: 8, सितंबर: 8, सितम्बर: 8,
+            oct: 9, october: 9, अक्टूबर: 9,
+            nov: 10, november: 10, नवंबर: 10, नवम्बर: 10,
+            dec: 11, december: 11, दिसंबर: 11, दिसम्बर: 11
+        };
+        const monthPattern = Object.keys(months).sort((a, b) => b.length - a.length).join("|");
+        const monthMatch = value.match(new RegExp(`(\\d{1,2})\\s*(${monthPattern})|(${monthPattern})\\s*(\\d{1,2})`, "i"));
+        if (monthMatch) {
+            const day = Number(monthMatch[1] || monthMatch[4]);
+            const monthName = (monthMatch[2] || monthMatch[3]).toLowerCase();
+            const yearMatch = value.match(/\b(20\d{2})\b/);
+            const date = new Date(Number(yearMatch?.[1] || result.getFullYear()), months[monthName], day);
+            return localDateString(date);
+        }
+
+        const dayOnly = value.match(/(?:^|\s)(\d{1,2})\s*(?:tarikh|tareekh|taarikh|तारीख़?|date)(?=\s|$|[.,!?])/i);
+        if (dayOnly) {
+            const day = Number(dayOnly[1]);
+            const date = new Date(result.getFullYear(), result.getMonth(), day);
+            if (date < new Date(result.getFullYear(), result.getMonth(), result.getDate())) {
+                date.setMonth(date.getMonth() + 1);
+            }
+            return localDateString(date);
+        }
+
+        const numeric = value.match(/\b(\d{1,2})[/-](\d{1,2})(?:[/-](20\d{2}))?\b/);
+        if (numeric) {
+            const date = new Date(Number(numeric[3] || result.getFullYear()), Number(numeric[2]) - 1, Number(numeric[1]));
+            return localDateString(date);
+        }
+        return null;
+    }
+
+    async function showSlotsForDate(slotDate, transcript) {
+        const query = new URLSearchParams({
+            business_type: "cafe",
+            start_date: slotDate,
+            days: "1",
+            guests: String(Number(bookingGuestsInput.value || 1))
+        });
+        slotResults.replaceChildren();
+        try {
+            const response = await fetch(`/api/booking/schedule?${query}`);
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.detail || "Could not load slots.");
+            const slots = data.available_slots || [];
+            if (!slots.length) {
+                bookingDateProvided = false;
+                const prompt = bookingLanguage === "hi"
+                    ? `${formatDateForSpeech(slotDate)} को कोई खाली समय नहीं है। कृपया दूसरी तारीख़ चुनें।`
+                    : `There are no open cafe times on ${formatDateForSpeech(slotDate)}. Please choose another date.`;
+                bookingConversationActive = true;
+                bookingStage = "awaiting_date";
+                bookingStatus.textContent = prompt;
+                answerBox.textContent = prompt;
+                speakAnswer(prompt, bookingLanguage, false, true);
+                return;
+            }
+
+            const payload = {
+                business_type: "cafe",
+                slot_date: slotDate,
+                preferred_time: "19:00",
+                guests: Number(bookingGuestsInput.value || 1)
+            };
+            slots.forEach(slot => renderSlot(slot, false, payload, false, slotResults));
+            const times = slots.map(slot => formatTimeForSpeech(slot.start_time));
+            const prompt = bookingLanguage === "hi"
+                ? `${formatDateForSpeech(slotDate)} को ये समय उपलब्ध हैं: ${times.join(", ")}। सूची में से चुनें या समय बोलें।`
+                : `On ${formatDateForSpeech(slotDate)}, these times are available: ${times.join(", ")}. Choose one from the list or say the time.`;
+            bookingConversationActive = true;
+            bookingStage = "awaiting_time";
+            bookingStatus.textContent = prompt;
+            answerBox.textContent = prompt;
+            speakAnswer(prompt, bookingLanguage, false, true);
+        } catch (error) {
+            console.error("Date slot list failed:", error);
+            const prompt = bookingLanguage === "hi"
+                ? "समय की सूची लोड नहीं हो पाई। कृपया दोबारा पूछें।"
+                : "I couldn't load the time list. Please ask again.";
+            bookingStatus.textContent = prompt;
+            answerBox.textContent = prompt;
+            speakAnswer(prompt, bookingLanguage, false, true);
+        }
+    }
+
+    async function showUpcomingSlots() {
+        const slots = await loadUpcomingSchedule();
+        if (!slots.length) {
+            const prompt = bookingLanguage === "hi"
+                ? "अगले दिनों में कोई खाली कैफ़े स्लॉट नहीं मिला। दूसरी तारीख़ बताइए।"
+                : "I couldn't find an open cafe slot in the upcoming days. Please give another date.";
+            bookingConversationActive = true;
+            bookingStage = "awaiting_date";
+            bookingStatus.textContent = prompt;
+            answerBox.textContent = prompt;
+            speakAnswer(prompt, bookingLanguage, false, true);
+            return;
+        }
+        const groups = new Map();
+        slots.forEach(slot => {
+            const date = String(slot.slot_date);
+            if (!groups.has(date)) groups.set(date, []);
+            groups.get(date).push(formatTimeForSpeech(slot.start_time));
+        });
+        const listing = [...groups.entries()].map(([date, times]) =>
+            `${formatDateForSpeech(date)}: ${times.join(", ")}`
+        ).join("; ");
+        const prompt = bookingLanguage === "hi"
+            ? `आने वाले दिनों के खाली समय यह हैं: ${listing}। सूची से कोई तारीख़ और समय चुनें।`
+            : `Upcoming open cafe times: ${listing}. Choose a date and time from the list.`;
+        bookingConversationActive = true;
+        bookingStage = "awaiting_date";
+        bookingStatus.textContent = prompt;
+        answerBox.textContent = prompt;
+        speakAnswer(prompt, bookingLanguage, false, true);
+    }
+
+    async function loadUpcomingSchedule() {
+        upcomingSchedule.replaceChildren();
+        const startDate = new Date();
+        startDate.setDate(startDate.getDate() + 1);
+        const query = new URLSearchParams({
+            business_type: businessTypeInput.value,
+            start_date: localDateString(startDate),
+            days: "8",
+            guests: String(Number(bookingGuestsInput.value || 1))
+        });
+
+        try {
+            const response = await fetch(`/api/booking/schedule?${query}`);
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.detail || "Schedule unavailable.");
+
+            if (!data.available_slots?.length) {
+                upcomingSchedule.textContent = "Agle 8 din ke liye koi open slot nahi mila.";
+                return [];
+            }
+
+            const schedulePayload = {
+                business_type: businessTypeInput.value,
+                slot_date: localDateString(startDate),
+                preferred_time: "19:00",
+                guests: Number(bookingGuestsInput.value || 1)
+            };
+            data.available_slots.forEach(slot =>
+                renderSlot(slot, false, schedulePayload, false, upcomingSchedule)
+            );
+            return data.available_slots;
+        } catch (error) {
+            console.warn("Upcoming schedule load failed:", error);
+            upcomingSchedule.textContent = "Upcoming slots load nahi ho paaye.";
+            return [];
+        }
+    }
+
+    function speakDate(dateString) {
+        return dateString || "the selected date";
+    }
+
+    async function fetchScribeToken() {
+        const response = await fetch("/api/scribe-token");
+        const data = await response.json();
+
+        if (!response.ok || !data.token) {
+            throw new Error(data.detail || "Realtime token unavailable.");
+        }
+
+        return data.token;
+    }
+
+    function prefetchScribeToken() {
+        if (prefetchedToken || tokenPrefetchPromise) return;
+
+        tokenPrefetchPromise = fetchScribeToken()
+            .then(token => {
+                prefetchedToken = token;
+                prefetchedTokenAt = performance.now();
+            })
+            .catch(error => console.warn("Token prefetch failed:", error))
+            .finally(() => {
+                tokenPrefetchPromise = null;
+            });
+    }
+
+    async function getReadyScribeToken() {
+        if (
+            prefetchedToken &&
+            performance.now() - prefetchedTokenAt < TOKEN_CACHE_MAX_AGE_MS
+        ) {
+            const token = prefetchedToken;
+            prefetchedToken = null;
+            return token;
+        }
+
+        if (tokenPrefetchPromise) {
+            await tokenPrefetchPromise;
+
+            if (
+                prefetchedToken &&
+                performance.now() - prefetchedTokenAt < TOKEN_CACHE_MAX_AGE_MS
+            ) {
+                const token = prefetchedToken;
+                prefetchedToken = null;
+                return token;
+            }
+        }
+
+        prefetchedToken = null;
+        return await fetchScribeToken();
+    }
+
+    prefetchScribeToken();
+
+    recordBtn.addEventListener("click", async () => {
+        if (autoMode || connection) return;
+
+        autoMode = true;
+        recordBtn.disabled = true;
+        stopBtn.disabled = false;
+
+        statusText.textContent = "Starting conversation...";
+        await startRecording();
+    });
+
+    stopBtn.addEventListener("click", endConversation);
+
+    replayBtn.addEventListener("click", () => {
+        if (lastAnswer) speakAnswer(lastAnswer, lastTranscript, false, false);
+    });
+
+    checkAvailabilityBtn.addEventListener("click", async () => {
+        const payload = readBookingForm();
+
+        await checkAvailability(payload, false);
+    });
+
+    downloadReceiptBtn.addEventListener("click", () => {
+        if (!latestReceipt) return;
+        const rows = [
+            ["Receipt number", latestReceipt.receipt_number],
+            ["Business", latestReceipt.business_name],
+            ["Customer", latestReceipt.customer_name],
+            ["Phone", latestReceipt.customer_phone],
+            [latestReceipt.appointment_number ? "Appointment number" :
+                (latestReceipt.seat_numbers ? "Seat number(s)" : "Booking number"),
+                latestReceipt.appointment_number || latestReceipt.seat_numbers || latestReceipt.receipt_number],
+            ["Date", latestReceipt.slot_date],
+            ["Time", formatTimeForDisplay(latestReceipt.start_time)],
+            ["People / guests", latestReceipt.guests],
+            ["Status", latestReceipt.status]
+        ];
+        const escapeHTML = value => String(value ?? "").replace(/[&<>\"']/g, char => ({
+            "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;"
+        })[char]);
+        const body = rows.map(([label, value]) =>
+            `<tr><th>${escapeHTML(label)}</th><td>${escapeHTML(value)}</td></tr>`
+        ).join("");
+        const receiptHTML = `<!doctype html><html><head><meta charset="utf-8"><title>Booking receipt</title><style>body{font:16px Arial,sans-serif;max-width:650px;margin:40px auto;padding:24px;color:#172033}h1{color:#4c1d95}table{width:100%;border-collapse:collapse}th,td{text-align:left;padding:12px;border-bottom:1px solid #ddd}th{width:40%}</style></head><body><h1>Booking receipt</h1><table>${body}</table></body></html>`;
+        const url = URL.createObjectURL(new Blob([receiptHTML], { type: "text/html" }));
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `${latestReceipt.receipt_number || "booking-receipt"}.html`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+    });
+
+    businessTypeInput.addEventListener("change", loadUpcomingSchedule);
+    bookingGuestsInput.addEventListener("change", loadUpcomingSchedule);
+    void loadUpcomingSchedule();
+
+    confirmBookingBtn.addEventListener("click", async () => {
+        if (!pendingBooking) {
+            bookingStatus.textContent = "Pehle available slot select karo.";
+            return;
+        }
+
+        const name = customerNameInput.value.trim();
+        const phone = customerPhoneInput.value.trim();
+
+        if (!name) {
+            bookingStatus.textContent = "Customer name enter karo.";
+            customerNameInput.focus();
+            return;
+        }
+
+        if (!phone) {
+            bookingStatus.textContent = "Customer phone number enter karo.";
+            customerPhoneInput.focus();
+            return;
+        }
+
+        pendingCustomerName = name;
+        pendingCustomerPhone = phone;
+
+        const confirmed = window.confirm(
+            `Confirm booking?\n\n` +
+            `Name: ${name}\n` +
+            `Phone: ${phone}\n` +
+            `Business: ${businessTypeInput.value}\n` +
+            `Date: ${pendingBooking.slot_date}\n` +
+            `Time: ${formatTimeForDisplay(pendingBooking.start_time)}\n` +
+            `Guests: ${pendingBooking.guests}\n\n` +
+            `OK to create booking, Cancel to go back.`
+        );
+
+        if (!confirmed) {
+            bookingStatus.textContent =
+                "Booking cancel nahi hui hai; abhi create nahi ki gayi. Details edit kar sakti ho.";
+            return;
+        }
+
+        await createBooking();
+    });
+
+    function readBookingForm() {
+        return {
+            business_type: businessTypeInput.value,
+            slot_date: bookingDateInput.value,
+            preferred_time: bookingTimeInput.value,
+            guests: Number(bookingGuestsInput.value || 1)
+        };
+    }
+
+    function endConversation() {
+        autoMode = false;
+        isStopping = true;
+        processingTurn = false;
+
+        if (connection) {
+            try { connection.close(); } catch (error) { console.warn(error); }
+            connection = null;
+        }
+
+        microphonePermissionStream?.getTracks().forEach(track => track.stop());
+        microphonePermissionStream = null;
+
+        if ("speechSynthesis" in window) {
+            window.speechSynthesis.cancel();
+        }
+
+        recordBtn.disabled = false;
+        stopBtn.disabled = true;
+        statusText.textContent =
+            "Conversation ended. Click Start Conversation to restart.";
+
+        isStopping = false;
+    }
+
+    async function startRecording() {
+        if (!autoMode || connection || processingTurn) return;
+
+        recordingStartTime = performance.now();
+        firstPartialTime = null;
+        sttFirstPartialLatencyMs = null;
+        sttFinalLatencyMs = null;
+        committedTranscript = "";
+        partialTranscript = "";
+        isStopping = false;
+
+        recordBtn.disabled = true;
+        stopBtn.disabled = false;
+
+        transcriptBox.textContent = "Connecting to ElevenLabs...";
+        statusText.textContent = "Preparing microphone...";
+
+        try {
+            if (!navigator.mediaDevices?.getUserMedia || !window.isSecureContext) {
+                const unavailableError = new Error("Microphone access requires localhost or HTTPS.");
+                unavailableError.name = "MIC_UNAVAILABLE";
+                throw unavailableError;
+            }
+
+            window.speechSynthesis?.cancel();
+
+            // Ask for permission synchronously from the Start button flow, then
+            // release the temporary stream before Scribe opens its own microphone.
+            microphonePermissionStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            microphonePermissionStream.getTracks().forEach(track => track.stop());
+            microphonePermissionStream = null;
+
+            const token = await getReadyScribeToken();
+
+            if (!autoMode) return;
+
+            const newConnection = Scribe.connect({
+                token,
+                modelId: "scribe_v2_realtime",
+                commitStrategy: CommitStrategy.VAD,
+                microphone: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                }
+            });
+
+            if (!autoMode) {
+                newConnection.close();
+                return;
+            }
+
+            connection = newConnection;
+            transcriptBox.textContent = "Listening...";
+            statusText.textContent = "Listening... Speak now.";
+
+            newConnection.on(RealtimeEvents.SESSION_STARTED, () => {
+                if (!autoMode || connection !== newConnection) return;
+
+                statusText.textContent = "Listening... Speak now.";
+                recordBtn.disabled = true;
+                stopBtn.disabled = false;
+            });
+
+            newConnection.on(RealtimeEvents.PARTIAL_TRANSCRIPT, data => {
+                if (isStopping || connection !== newConnection || !data.text) return;
+
+                if (firstPartialTime === null) {
+                    firstPartialTime = performance.now();
+                    sttFirstPartialLatencyMs = Math.round(
+                        firstPartialTime - recordingStartTime
+                    );
+                }
+
+                partialTranscript = data.text;
+                transcriptBox.textContent = [
+                    committedTranscript,
+                    partialTranscript
+                ].filter(Boolean).join(" ");
+
+                statusText.textContent = "Listening...";
+            });
+
+            newConnection.on(RealtimeEvents.COMMITTED_TRANSCRIPT, data => {
+                if (isStopping || connection !== newConnection || !data.text) return;
+
+                committedTranscript = [
+                    committedTranscript,
+                    data.text
+                ].filter(Boolean).join(" ");
+
+                partialTranscript = "";
+                transcriptBox.textContent = committedTranscript;
+
+                if (autoMode && !processingTurn) {
+                    processingTurn = true;
+                    void processTranscript(committedTranscript.trim());
+                }
+            });
+
+            newConnection.on(RealtimeEvents.ERROR, error => {
+                console.error("ElevenLabs error:", error);
+                statusText.textContent = bookingLanguage === "hi"
+                    ? "आवाज़ साफ़ नहीं सुनाई दी। कृपया दोबारा बोलें।"
+                    : "I couldn't hear that clearly. Please say it again.";
+            });
+
+            prefetchScribeToken();
+
+        } catch (error) {
+            console.error("Start recording error:", error);
+
+            microphonePermissionStream?.getTracks().forEach(track => track.stop());
+            microphonePermissionStream = null;
+
+            if (connection) {
+                try { connection.close(); } catch {}
+                connection = null;
+            }
+
+            if (autoMode) {
+                autoMode = false;
+                recordBtn.disabled = false;
+                stopBtn.disabled = true;
+                const errorName = error?.name || "";
+                const errorText = String(error?.message || "");
+                if (errorName === "NotAllowedError" || errorName === "PermissionDeniedError" || /permission denied|not allowed/i.test(errorText)) {
+                    statusText.textContent = bookingLanguage === "hi"
+                        ? "माइक की अनुमति बंद है। ब्राउज़र के address bar में microphone को Allow करें, फिर Start Conversation दबाएँ।"
+                        : "Microphone permission is blocked. Allow it in the browser address bar, then click Start Conversation.";
+                } else if (errorName === "NotFoundError" || errorName === "DevicesNotFoundError") {
+                    statusText.textContent = bookingLanguage === "hi"
+                        ? "कोई microphone नहीं मिला। Mic connect करके फिर कोशिश करें।"
+                        : "No microphone was found. Connect a microphone and try again.";
+                } else if (errorName === "MIC_UNAVAILABLE") {
+                    statusText.textContent = bookingLanguage === "hi"
+                        ? "माइक इस page पर उपलब्ध नहीं है। http://127.0.0.1:8010 पर खोलें या HTTPS इस्तेमाल करें।"
+                        : "Microphone is unavailable on this page. Open it at http://127.0.0.1:8010 or use HTTPS.";
+                } else if (/ELEVENLABS|token|realtime|timed out|401|403|429|fetch/i.test(`${errorName} ${errorText}`)) {
+                    statusText.textContent = bookingLanguage === "hi"
+                        ? "ElevenLabs voice connection शुरू नहीं हुई। Server terminal और logs/latency.log में SCRIBE_TOKEN_FAILED देखें।"
+                        : "The ElevenLabs voice connection failed. Check the server terminal and SCRIBE_TOKEN_FAILED in logs/latency.log.";
+                } else {
+                    statusText.textContent = bookingLanguage === "hi"
+                        ? `माइक शुरू नहीं हो पाया (${errorName || "unknown error"})। ब्राउज़र में microphone को Allow करके फिर कोशिश करें।`
+                        : `The microphone couldn't start (${errorName || "unknown error"}). Allow microphone access in the browser and try again.`;
+                }
+            }
+
+            processingTurn = false;
+        }
+    }
+
+    async function logSTTLatency(question) {
+        const response = await fetch("/api/stt-latency", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                question,
+                stt_first_partial_latency_ms: sttFirstPartialLatencyMs,
+                stt_final_latency_ms: sttFinalLatencyMs
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error("STT latency logging failed: " + response.status);
+        }
+    }
+
+    async function processTranscript(transcript) {
+        transcript = normalizeTranscript(transcript);
+        if (!transcript || !autoMode) {
+            processingTurn = false;
+            return;
+        }
+
+        lastTranscript = transcript;
+        sttFinalLatencyMs = Math.round(performance.now() - recordingStartTime);
+
+        // Close the microphone before the assistant speaks.
+        const oldConnection = connection;
+        connection = null;
+        isStopping = true;
+
+        if (oldConnection) {
+            try { oldConnection.close(); } catch (error) { console.warn(error); }
+        }
+
+        isStopping = false;
+        transcriptBox.textContent = transcript;
+        statusText.textContent = "Processing your message...";
+
+        try {
+            await logSTTLatency(transcript);
+        } catch (error) {
+            console.warn("STT latency log failed:", error);
+        }
+
+        try {
+            // Continue an active booking conversation before sending to Groq.
+            if (await handleBookingConversation(transcript)) return;
+
+            if (await tryHandleBookingRequest(transcript)) return;
+
+            statusText.textContent = "Generating AI answer...";
+            requestStartTime = performance.now();
+
+            const response = await fetch("/api/answer", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    transcript,
+                    response_language: responseLanguage(transcript)
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.detail || "Answer request failed.");
+            }
+
+            lastAnswer = data.answer || "";
+            answerBox.textContent = lastAnswer || "No answer was returned.";
+            replayBtn.disabled = !lastAnswer;
+
+            console.log("Saved to database:", data.saved_to_database);
+
+            if (lastAnswer) {
+                speakAnswer(lastAnswer, transcript, true, true);
+            } else {
+                finishTurnWithoutSpeech();
+            }
+
+        } catch (error) {
+            console.error("Voice API error:", error);
+
+            const message = responseLanguage(transcript) === "hi"
+                ? "मैं आपकी बात ठीक से समझ नहीं पाई। कृपया दोबारा बोलें।"
+                : "I couldn't get a clear answer. Could you please say it again?";
+            answerBox.textContent = message;
+            statusText.textContent = message;
+
+            speakAnswer(message, transcript, false, true);
+        }
+    }
+
+    function finishTurnWithoutSpeech() {
+        processingTurn = false;
+
+        if (autoMode) {
+            setTimeout(() => {
+                if (autoMode && !connection && !processingTurn) {
+                    startRecording();
+                }
+            }, 350);
+        }
+    }
+
+    async function tryHandleBookingRequest(transcript, forceBooking = false) {
+        const text = transcript.toLowerCase();
+
+        const bookingWords =
+            /\b(book|booking|reserve|reservation|slot|appointment|availability|available)\b|बुक|बुकिंग|करवा|चाहिए|बजे|जगह/i;
+
+        const unsupportedBusiness =
+            /\b(hospital|clinic|doctor|gym|salon|hotel)\b|हॉस्पिटल|अस्पताल|डॉक्टर|जिम|पार्लर|सैलून|होटल/i;
+        const cafePattern = /\bcafe\b|\bcafé\b|coffee shop|कैफे/i;
+
+        const looksLikeBooking = bookingWords.test(text) || asksForSchedule(text);
+        if (!bookingConversationActive && looksLikeBooking) {
+            bookingLanguage = responseLanguage(transcript);
+            bookingDateProvided = false;
+            guestCountProvided = true;
+            pendingSlotChoice = null;
+            bookingGuestsInput.value = "2";
+        }
+        if (unsupportedBusiness.test(text) && !cafePattern.test(text) &&
+            (looksLikeBooking || bookingConversationActive)) {
+            bookingConversationActive = false;
+            bookingStage = "idle";
+            const prompt = isHindiInput(transcript)
+                ? "अभी सिर्फ़ कैफ़े की बुकिंग उपलब्ध है। क्या आप कैफ़े के लिए समय बुक करना चाहेंगी?"
+                : "Only cafe booking is available right now. Would you like to book a cafe slot?";
+            bookingStatus.textContent = prompt;
+            answerBox.textContent = prompt;
+            await bookingPrompt(prompt);
+            return true;
+        }
+
+        const type = cafePattern.test(text) ? "cafe" : null;
+
+        if (!looksLikeBooking && !bookingConversationActive && !forceBooking) return false;
+
+        if (looksLikeBooking) bookingConversationActive = true;
+        if (type) businessTypeInput.value = type;
+
+        const requestedDate = parseBookingDate(text);
+        if (requestedDate) {
+            bookingDateInput.value = requestedDate;
+            bookingDateProvided = true;
+        }
+
+        let hour = null;
+        let minute = 0;
+
+        const time24 = text.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/);
+        const time12 = text.match(
+            /\b(1[0-2]|0?[1-9])\s*(?::\s*([0-5]\d))?\s*(am|pm)\b/i
+        );
+        const extendedPm = text.match(
+            /\b(1[3-9]|2[0-3])\s*(?::\s*([0-5]\d))?\s*pm\b/i
+        );
+        const baje = text.match(
+            /\b(2[0-3]|1\d|0?[1-9])\s*(?::\s*([0-5]\d))?\s*(?:baje|बजे)\b/i
+        );
+
+        const timeMatch = time24 || time12 || extendedPm || baje;
+
+        if (timeMatch) {
+            hour = Number(timeMatch[1]);
+            minute = Number(timeMatch[2] || 0);
+
+            if (time24 || extendedPm) {
+                // Already in 24-hour format.
+            } else if (time12) {
+                const suffix = time12[3].toLowerCase();
+                if (suffix === "pm" && hour < 12) hour += 12;
+                if (suffix === "am" && hour === 12) hour = 0;
+            } else if (
+                /\b(shaam|evening|night)\b|शाम|रात/i.test(text) &&
+                hour < 12
+            ) {
+                hour += 12;
+            }
+        } else if (/\b(noon|dopahar)\b|दोपहर/i.test(text)) {
+            hour = 12;
+        }
+
+        const guestCount = extractGuestCount(text);
+        if (guestCount !== null) {
+            bookingGuestsInput.value = guestCount;
+            guestCountProvided = true;
+        }
+
+        if (hour === null) {
+            bookingConversationActive = true;
+            if (bookingDateProvided && bookingDateInput.value) {
+                await showSlotsForDate(bookingDateInput.value, transcript);
+            } else if (asksForSchedule(text)) {
+                await showUpcomingSlots();
+            } else {
+                const prompt = bookingLanguage === "hi"
+                    ? "कैफ़े की बुकिंग के लिए कौन-सी तारीख़ चाहिए? तारीख़ बताइए, मैं उस दिन के समय दिखाऊँगी।"
+                    : "What date would you like for the cafe booking? I'll show the available times for that date.";
+                bookingStage = "awaiting_date";
+                bookingStatus.textContent = prompt;
+                answerBox.textContent = prompt;
+                speakAnswer(prompt, bookingLanguage, false, true);
+            }
+            return true;
+        }
+
+        if (!bookingDateProvided) {
+            const prompt = bookingLanguage === "hi"
+                ? "समय नोट कर लिया। अब बुकिंग की तारीख़ बताइए।"
+                : "I have the time. What date should I check?";
+            bookingConversationActive = true;
+            bookingStage = "awaiting_date";
+            bookingTimeInput.value = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+            bookingStatus.textContent = prompt;
+            answerBox.textContent = prompt;
+            speakAnswer(prompt, bookingLanguage, false, true);
+            return true;
+        }
+
+        bookingTimeInput.value =
+            String(hour).padStart(2, "0") + ":" +
+            String(minute).padStart(2, "0");
+
+        bookingConversationActive = false;
+        bookingStage = "idle";
+
+        await checkAvailability(readBookingForm(), true);
+        return true;
+    }
+
+    async function handleBookingConversation(transcript) {
+        if (!bookingConversationActive || bookingStage === "idle") return false;
+
+        const text = transcript.trim();
+        const lower = text.toLowerCase();
+
+        if (bookingStage === "awaiting_time" || bookingStage === "awaiting_date") {
+            await tryHandleBookingRequest(text, true);
+            return true;
+        }
+
+        if (bookingStage === "awaiting_guests") {
+            const count = extractGuestCount(text, true);
+            if (count === null) {
+                const prompt = bookingLanguage === "hi"
+                    ? "कृपया लोगों की संख्या बताइए, जैसे 2 लोग।"
+                    : "Please say how many people, for example 2 people.";
+                await bookingPrompt(prompt);
+                return true;
+            }
+
+            bookingGuestsInput.value = count;
+            guestCountProvided = true;
+            bookingStage = "idle";
+            bookingConversationActive = false;
+
+            if (pendingSlotChoice) {
+                const slot = pendingSlotChoice;
+                pendingSlotChoice = null;
+                await checkAvailability({
+                    business_type: "cafe",
+                    slot_date: slot.slot_date,
+                    preferred_time: String(slot.start_time).slice(0, 5),
+                    guests: count
+                }, true);
+                return true;
+            }
+
+            await checkAvailability(readBookingForm(), true);
+            return true;
+        }
+
+        if (bookingStage === "awaiting_name") {
+            if (text.length < 2 || /^(cancel|stop|नहीं|रद्द)$/i.test(lower)) {
+                await bookingPrompt(
+                    bookingLanguage === "hi"
+                        ? "कृपया अपना नाम बताइए। बुकिंग रद्द करने के लिए ‘रद्द’ कहें।"
+                        : "Please say your name. Say cancel to stop the booking."
+                );
+                return true;
+            }
+
+            pendingCustomerName = text.replace(
+                /^(my name is|name is|mera naam|मेरा नाम)\s+/i, ""
+            ).trim();
+
+            customerNameInput.value = pendingCustomerName;
+            bookingStage = "awaiting_phone";
+
+            await bookingPrompt(
+                bookingLanguage === "hi"
+                    ? "अब अपना फ़ोन नंबर बताइए।"
+                    : "Now say your phone number."
+            );
+            return true;
+        }
+
+        if (bookingStage === "awaiting_phone") {
+            const digits = text.replace(/\D/g, "");
+
+            if (digits.length < 7 || digits.length > 15) {
+                await bookingPrompt(
+                    bookingLanguage === "hi"
+                        ? "फ़ोन नंबर साफ़ सुनाई नहीं दिया। कृपया अंक एक-एक करके फिर से बताइए।"
+                        : "I couldn't hear the phone number clearly. Please say the digits again."
+                );
+                return true;
+            }
+
+            pendingCustomerPhone = digits;
+            customerPhoneInput.value = digits;
+
+            bookingStage = "awaiting_confirmation";
+
+            const summary = bookingLanguage === "hi"
+                ? `कृपया पुष्टि करें: नाम ${pendingCustomerName}, फ़ोन ${pendingCustomerPhone}, ` +
+                  `कैफ़े, तारीख़ ${pendingBooking.slot_date}, समय ${formatTimeForDisplay(pendingBooking.start_time)}, ` +
+                  `${pendingBooking.guests} लोग। बुकिंग पक्की करने के लिए हाँ कहें।`
+                : `Please confirm: ${pendingCustomerName}, phone ${pendingCustomerPhone}, ` +
+                  `cafe, date ${pendingBooking.slot_date}, time ${formatTimeForDisplay(pendingBooking.start_time)}, ` +
+                  `${pendingBooking.guests} guests. Say yes to confirm.`;
+
+            await bookingPrompt(summary);
+            return true;
+        }
+
+        if (bookingStage === "awaiting_confirmation") {
+            const yes =
+                /\b(yes|yeah|yep|confirm|confirmed|haan|han|ha|kar do|book it|proceed)\b|हाँ|हां|कर दो|पक्का/i.test(lower);
+            const no =
+                /\b(no|nope|cancel|don't|do not)\b|नहीं|रद्द/i.test(lower);
+
+            if (no) {
+                bookingStage = "idle";
+                bookingConversationActive = false;
+                pendingBooking = null;
+                confirmBookingBtn.disabled = true;
+
+                await bookingPrompt(
+                    bookingLanguage === "hi"
+                        ? "ठीक है, बुकिंग नहीं की गई।"
+                        : "Okay, the booking was not created."
+                );
+                return true;
+            }
+
+            if (!yes) {
+                await bookingPrompt(
+                    bookingLanguage === "hi"
+                        ? "बुकिंग पक्की करने के लिए हाँ कहें, या रद्द करने के लिए नहीं कहें।"
+                        : "Say yes to confirm the booking, or no to cancel."
+                );
+                return true;
+            }
+
+            await createBooking();
+            return true;
+        }
+
+        return false;
+    }
+
+    async function bookingPrompt(message) {
+        bookingStatus.textContent = message;
+        answerBox.textContent = message;
+        lastAnswer = message;
+        replayBtn.disabled = false;
+        speakAnswer(message, bookingLanguage, false, true);
+    }
+
+    function extractSlotId(slot) {
+        return slot?.slot_id ?? slot?.id ?? slot?.availability_id ?? null;
+    }
+
+    function extractBusinessId(slot) {
+        return slot?.business_id ?? slot?.businessId ?? null;
+    }
+
+    function prepareSelectedSlot(slot, payload) {
+        const slotId = extractSlotId(slot);
+        const businessId = extractBusinessId(slot);
+
+        if (slotId == null || businessId == null) {
+            pendingBooking = null;
+            confirmBookingBtn.disabled = true;
+
+            bookingStatus.textContent =
+                "Slot mila hai, lekin response mein business_id ya slot_id missing hai. " +
+                "booking_service.py ke returned slot fields check karne honge.";
+
+            return false;
+        }
+
+        selectedSlot = slot;
+
+        pendingBooking = {
+            business_id: Number(businessId),
+            slot_id: Number(slotId),
+            slot_date: slot.slot_date || payload.slot_date,
+            start_time: slot.start_time || payload.preferred_time,
+            guests: Number(payload.guests),
+            business_type: payload.business_type,
+            business_name: slot.business_name || payload.business_type
+        };
+
+        confirmBookingBtn.disabled = false;
+        return true;
+    }
+
+    async function checkAvailability(payload, voiceResponse = false) {
+        slotResults.replaceChildren();
+
+        if (!payload.slot_date || !payload.preferred_time) {
+            const message = "Please select a date and time first.";
+            bookingStatus.textContent = message;
+            if (voiceResponse) await bookingPrompt(message);
+            return;
+        }
+
+        if (payload.slot_date < localDateString(new Date())) {
+            const message = "Past date par booking nahi kar sakte. Future date choose karo.";
+            bookingStatus.textContent = message;
+            if (voiceResponse) await bookingPrompt(message);
+            return;
+        }
+
+        if (!Number.isInteger(payload.guests) ||
+            payload.guests < 1 || payload.guests > 20) {
+            const message = "Guests must be between 1 and 20.";
+            bookingStatus.textContent = message;
+            if (voiceResponse) await bookingPrompt(message);
+            return;
+        }
+
+        lastAvailabilityPayload = payload;
+        pendingBooking = null;
+        selectedSlot = null;
+        confirmBookingBtn.disabled = true;
+
+        checkAvailabilityBtn.disabled = true;
+        bookingStatus.textContent = "Checking available slots...";
+
+        try {
+            const response = await fetch("/api/booking/suggestions", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    ...payload,
+                    response_language: voiceResponse ? bookingLanguage : responseLanguage(lastTranscript)
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.detail || "Availability check failed.");
+            }
+
+            const hasPreferredSlot = Boolean(data.selected_slot);
+            const hasAlternatives =
+                Array.isArray(data.suggestions) && data.suggestions.length > 0;
+
+            if (hasPreferredSlot) {
+                const valid = prepareSelectedSlot(data.selected_slot, payload);
+                renderSlot(data.selected_slot, true, payload, valid);
+            }
+
+            if (hasAlternatives) {
+                const heading = document.createElement("h3");
+                heading.textContent = "Alternative available slots";
+                slotResults.appendChild(heading);
+
+                data.suggestions.forEach(slot => {
+                    renderSlot(slot, false, payload, false);
+                });
+            }
+
+            let spokenMessage = data.message || "Availability checked.";
+
+            if (hasPreferredSlot && pendingBooking) {
+                spokenMessage += bookingLanguage === "hi"
+                    ? " समय चुन लिया गया है। आगे बढ़ने के लिए अपना नाम बताइए।"
+                    : " The slot is selected. Please say your name to continue.";
+
+                bookingConversationActive = true;
+                bookingStage = "awaiting_name";
+
+            } else if (hasAlternatives) {
+                spokenMessage += bookingLanguage === "hi"
+                    ? " इनमें से कोई उपलब्ध समय चुनिए।"
+                    : " Choose one of these available times.";
+
+                bookingConversationActive = true;
+                bookingStage = "awaiting_slot";
+
+            } else {
+                spokenMessage += bookingLanguage === "hi"
+                    ? " कृपया दूसरी तारीख़ या समय चुनें।"
+                    : " Please try another date or time.";
+                bookingConversationActive = false;
+                bookingStage = "idle";
+            }
+
+            bookingStatus.textContent = data.message || spokenMessage;
+            answerBox.textContent = spokenMessage;
+
+            if (voiceResponse) {
+                lastAnswer = spokenMessage;
+                replayBtn.disabled = false;
+                speakAnswer(spokenMessage, bookingLanguage, false, true);
+            } else {
+                statusText.textContent = "Availability check finished.";
+            }
+
+        } catch (error) {
+            console.error("Availability error:", error);
+
+            const message = "Availability error: " + error.message;
+            bookingStatus.textContent = message;
+            answerBox.textContent = message;
+
+            if (voiceResponse) {
+                speakAnswer(message, bookingLanguage, false, true);
+            }
+
+        } finally {
+            checkAvailabilityBtn.disabled = false;
+        }
+    }
+
+    function renderSlot(slot, isPreferred, payload, isValidPreferred, target = slotResults) {
+        const card = document.createElement("div");
+        card.className = "slot-card";
+
+        const heading = document.createElement("strong");
+        heading.textContent = slot.business_name || "Available business";
+        card.appendChild(heading);
+
+        const details = document.createElement("p");
+        details.textContent =
+            `${slot.business_type || payload.business_type} · ` +
+            `${slot.slot_date || payload.slot_date} · ` +
+            `${formatTimeForDisplay(slot.start_time)} · ` +
+            `Available capacity: ${slot.available_capacity ?? "Not specified"}`;
+        card.appendChild(details);
+
+        const chooseButton = document.createElement("button");
+        chooseButton.type = "button";
+        chooseButton.textContent = isPreferred
+            ? "Select this slot"
+            : "Choose alternative";
+
+        chooseButton.addEventListener("click", async () => {
+            document.querySelectorAll(".slot-card").forEach(item => {
+                item.classList.remove("selected");
+            });
+
+            card.classList.add("selected");
+
+            // Keep selected date/time in the form for the selected alternative.
+            bookingDateInput.value = slot.slot_date || payload.slot_date;
+            bookingTimeInput.value = String(slot.start_time).slice(0, 5);
+
+            const chosenPayload = {
+                ...payload,
+                slot_date: bookingDateInput.value,
+                preferred_time: bookingTimeInput.value
+            };
+
+            bookingDateProvided = true;
+            const valid = prepareSelectedSlot(slot, chosenPayload);
+
+            if (!valid) {
+                bookingConversationActive = false;
+                bookingStage = "idle";
+                return;
+            }
+
+            bookingConversationActive = true;
+            bookingStage = "awaiting_name";
+
+            const prompt =
+                bookingLanguage === "hi"
+                    ? `${pendingBooking.business_name}, ${pendingBooking.slot_date}, ` +
+                      `${formatTimeForDisplay(pendingBooking.start_time)} का समय चुना गया है। ` +
+                      `आगे बढ़ने के लिए ग्राहक का नाम बताइए।`
+                    : `Selected ${pendingBooking.business_name}, ${pendingBooking.slot_date}, ` +
+                      `${formatTimeForDisplay(pendingBooking.start_time)}. ` +
+                      `Please say the customer's name to continue.`;
+
+            bookingStatus.textContent = prompt;
+            answerBox.textContent = prompt;
+
+            if (autoMode) {
+                await bookingPrompt(prompt);
+            }
+        });
+
+        card.appendChild(chooseButton);
+        target.appendChild(card);
+    }
+
+    async function createBooking() {
+        if (!pendingBooking) {
+            bookingStatus.textContent = "Pehle available slot select karo.";
+            return;
+        }
+
+        const name = customerNameInput.value.trim() || pendingCustomerName;
+        const phone = customerPhoneInput.value.trim() || pendingCustomerPhone;
+
+        if (!name) {
+            bookingStatus.textContent = "Customer name required hai.";
+            bookingConversationActive = true;
+            bookingStage = "awaiting_name";
+                if (autoMode) await bookingPrompt(
+                    bookingLanguage === "hi" ? "कृपया अपना नाम बताइए।" : "Please say your name."
+                );
+            return;
+        }
+
+        if (!phone) {
+            bookingStatus.textContent = "Customer phone number required hai.";
+            bookingConversationActive = true;
+            bookingStage = "awaiting_phone";
+                if (autoMode) await bookingPrompt(
+                    bookingLanguage === "hi" ? "अब अपना फ़ोन नंबर बताइए।" : "Now say your phone number."
+                );
+            return;
+        }
+
+        const payload = {
+            customer_name: name,
+            business_id: pendingBooking.business_id,
+            slot_id: pendingBooking.slot_id,
+            guests: Number(pendingBooking.guests),
+            customer_phone: phone,
+            response_language: bookingLanguage
+        };
+
+        confirmBookingBtn.disabled = true;
+        checkAvailabilityBtn.disabled = true;
+        bookingStatus.textContent = "Creating booking...";
+
+        try {
+            const response = await fetch("/api/booking/create", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || data.success === false) {
+                throw new Error(
+                    data.detail || data.message || "Booking could not be created."
+                );
+            }
+
+            const message =
+                data.message ||
+                `Booking successfully created for ${name}, ` +
+                `${pendingBooking.slot_date} at ` +
+                `${formatTimeForDisplay(pendingBooking.start_time)}.`;
+
+            bookingStatus.textContent = message;
+            answerBox.textContent = message;
+            if (data.receipt) showReceipt(data.receipt);
+            lastAnswer = message;
+            replayBtn.disabled = false;
+
+            bookingConversationActive = false;
+            bookingStage = "idle";
+            pendingBooking = null;
+            selectedSlot = null;
+            pendingBookingConfirmed = true;
+
+            slotResults.replaceChildren();
+            void loadUpcomingSchedule();
+
+            if (autoMode) {
+                speakAnswer(message, bookingLanguage, false, true);
+            } else {
+                statusText.textContent = "Booking created successfully.";
+            }
+
+        } catch (error) {
+            console.error("Booking creation error:", error);
+
+            if (pendingBooking && /already booked|not enough availability/i.test(error.message)) {
+                const attemptedBooking = pendingBooking;
+                await checkAvailability({
+                    business_type: attemptedBooking.business_type,
+                    slot_date: attemptedBooking.slot_date,
+                    preferred_time: String(attemptedBooking.start_time).slice(0, 5),
+                    guests: Number(attemptedBooking.guests)
+                }, autoMode);
+                return;
+            }
+
+            const message = "Booking create nahi ho paayi: " + error.message;
+            bookingStatus.textContent = message;
+            answerBox.textContent = message;
+
+            // Keep the selected booking so the user can retry after resolving the issue.
+            confirmBookingBtn.disabled = false;
+
+            if (autoMode) {
+                speakAnswer(message, bookingLanguage, false, true);
+            }
+
+        } finally {
+            checkAvailabilityBtn.disabled = false;
+        }
+    }
+
+    function showReceipt(receipt) {
+        latestReceipt = receipt;
+        receiptContent.replaceChildren();
+        const rows = [
+            ["Receipt number", receipt.receipt_number],
+            ["Business", receipt.business_name],
+            ["Customer", receipt.customer_name],
+            ["Phone", receipt.customer_phone],
+            [receipt.appointment_number ? "Appointment number" :
+                (receipt.seat_numbers ? "Seat number(s)" : "Booking number"),
+                receipt.appointment_number || receipt.seat_numbers || receipt.receipt_number],
+            ["Date", receipt.slot_date],
+            ["Time", formatTimeForDisplay(receipt.start_time)],
+            ["People / guests", receipt.guests],
+            ["Status", receipt.status]
+        ];
+        rows.forEach(([label, value]) => {
+            const row = document.createElement("p");
+            const heading = document.createElement("strong");
+            heading.textContent = `${label}: `;
+            row.append(heading, document.createTextNode(String(value ?? "")));
+            receiptContent.appendChild(row);
+        });
+        receiptPanel.hidden = false;
+    }
+
+    function speakAnswer(text, languageHint = "", logLatency = false, resumeListening = true) {
+        if (!text) {
+            if (resumeListening) finishTurnWithoutSpeech();
+            return;
+        }
+
+        if (!("speechSynthesis" in window)) {
+            statusText.textContent = "Answer is shown as text; speech playback is unsupported.";
+            if (resumeListening) finishTurnWithoutSpeech();
+            return;
+        }
+
+        window.speechSynthesis.cancel();
+
+        const utterance = new SpeechSynthesisUtterance(text);
+        const speakHindi = languageHint === "hi" || isHindiInput(languageHint) || /[\u0900-\u097F]/.test(text);
+        utterance.lang = speakHindi ? "hi-IN" : "en-US";
+        if (speakHindi) {
+            const voices = window.speechSynthesis.getVoices();
+            const hindiVoice = voices.find(voice => /^hi(-|$)/i.test(voice.lang));
+            if (hindiVoice) utterance.voice = hindiVoice;
+        }
+
+        utterance.rate = 1;
+
+        utterance.onstart = async () => {
+            statusText.textContent = "Assistant is speaking...";
+
+            if (logLatency) {
+                const latency = Math.round(performance.now() - requestStartTime);
+                console.log("[LATENCY] API request to voice playback:", latency, "ms");
+
+                try {
+                    const response = await fetch("/api/latency", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            question: lastTranscript,
+                            time_to_voice_start_ms: latency
+                        })
+                    });
+
+                    if (!response.ok) {
+                        console.error("Latency logging failed:", response.status);
+                    }
+                } catch (error) {
+                    console.error("Latency logging failed:", error);
+                }
+            }
+        };
+
+        utterance.onend = () => {
+            if (!resumeListening) {
+                statusText.textContent = "Answer finished.";
+                return;
+            }
+
+            processingTurn = false;
+
+            if (autoMode) {
+                statusText.textContent = "Listening again... Speak when ready.";
+
+                setTimeout(() => {
+                    if (autoMode && !connection && !processingTurn) {
+                        startRecording();
+                    }
+                }, 350);
+            } else {
+                statusText.textContent = "Answer finished.";
+            }
+        };
+
+        utterance.onerror = event => {
+            console.warn("Speech synthesis error:", event.error);
+
+            if (resumeListening) {
+                finishTurnWithoutSpeech();
+            }
+        };
+
+        window.speechSynthesis.speak(utterance);
+    }
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initializeVoiceAssistant, { once: true });
+} else {
+    initializeVoiceAssistant();
+}
+</script>
+</body>
+</html>
