@@ -11,7 +11,11 @@ DATABASE_URL = os.getenv(
     "mysql+pymysql://root:1234@localhost:3306/voice_ai_db"
 )
 
-engine = create_engine(DATABASE_URL, pool_pre_ping=True)
+engine = create_engine(
+    DATABASE_URL,
+    pool_pre_ping=True,
+    connect_args={"ssl": {}}
+)
 
 SessionLocal = sessionmaker(
     autocommit=False,
